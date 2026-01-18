@@ -7,7 +7,7 @@ WITH base AS (
     min_price,
     max_price,
     category_image_url
-  FROM {{ #fct_categories }}
+  FROM {{ #dim_categories }}
 )
 
 SELECT
