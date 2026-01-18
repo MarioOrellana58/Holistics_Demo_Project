@@ -21,13 +21,13 @@ dups AS (
 ranked AS (
   SELECT
     u.*,
-    LOWER(BTRIM(u.email)) AS email_norm, -- This returns all duplicated emails with a recommended canonical record (latest signup).
+    LOWER(BTRIM(u.email)) AS email_norm,
     ROW_NUMBER() OVER (
       PARTITION BY LOWER(BTRIM(u.email))
       ORDER BY sign_up_at DESC, id DESC
     ) AS rn
   FROM u
-  JOIN dups d ON LOWER(BTRIM(u.email)) = d.email_norm
+  LEFT JOIN dups d ON LOWER(BTRIM(u.email)) = d.email_norm
 )
 SELECT
   email_norm,
