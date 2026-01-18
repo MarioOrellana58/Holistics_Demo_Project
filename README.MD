@@ -5,11 +5,8 @@
 1. [Project Overview](#project-overview)
 2. [Architecture & Data Flow](#architecture--data-flow)
 3. [Dataset Design](#dataset-design)
-4. [Role-Playing Dimensions](#role-playing-dimensions)
-5. [AQL Metrics & Calculations](#aql-metrics--calculations)
-6. [Data Quality Framework](#data-quality-framework)
-7. [Technical Documentation](#technical-documentation)
-8. [Assumptions & Design Decisions](#assumptions--design-decisions)
+4. [Data Quality Framework](#data-quality-framework)
+5. [Assumptions & Design Decisions](#assumptions--design-decisions)
 
 ---
 
@@ -113,7 +110,6 @@ We create a **unified dataset** that includes both order facts and inventory fac
 2. Analyze inventory metrics (stock levels, turnover) by product
 3. Combine both (e.g., "Which products have high revenue but low inventory turnover?")
 
-
 ---
 
 ## Data Quality Framework
@@ -139,6 +135,8 @@ The project includes comprehensive data quality queries in the `Queries` folder:
 - Negative prices
 - Invalid price ranges (min_price > max_price)
 - Extreme value detection
+
+---
 
 ## Assumptions & Design Decisions
 
@@ -186,34 +184,38 @@ The project includes comprehensive data quality queries in the `Queries` folder:
 
 ```
 Holistics/
-├── Queries/
-│   │
-│   ├──    # Data quality validation
-│   │   ├── orders.sql
-│   │   ├── users.sql
-│   │   ├── products.sql
-│   │   └── categories.sql
+├── Queries/                 # Data quality validation queries
+│   ├── orders.sql
+│   ├── users.sql
+│   ├── products.sql
+│   ├── categories.sql
+│   ├── inventory.sql
+│   ├── merchants.sql
+│   ├── cities.sql
+│   └── countries.sql
+│
 ├── models/
-│   │
-│   ├── Silver/              # Data cleaning & business rules
-│   │   ├── orders.sql       # Conflict resolution, status normalization
-│   │   ├── users.sql        # Email deduplication
+│   ├── Silver/             # Data cleaning & business rules
+│   │   ├── orders.sql      # Conflict resolution, status normalization
+│   │   ├── users.sql       # Email deduplication
 │   │   ├── products.sql
 │   │   ├── categories.sql
 │   │   ├── inventory.sql
 │   │   ├── dates.sql
-│   │   └── ...
+│   │   ├── merchants.sql
+│   │   ├── cities.sql
+│   │   └── countries.sql
 │   │
-│   └── Gold/                # Business-ready datasets
-│       ├── order_lines.sql  # Line-level fact with date keys
-│       ├── orders.sql       # Order-level aggregations
+│   └── Gold/               # Business-ready datasets
+│       ├── order_lines.sql # Line-level fact with date keys
+│       ├── orders.sql      # Order-level aggregations
 │       ├── inventory_current.sql
 │       └── inventory_daily.sql
 │
-├── datasets/                # Holistics dataset definitions (AML)
+├── datasets/               # Holistics dataset definitions (AML)
 │   └── (dataset configuration files)
 │
-└── README.MD               # This file
+└── README.MD              # This file
 ```
 
 ---
