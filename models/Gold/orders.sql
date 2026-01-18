@@ -67,7 +67,7 @@ agg AS (
    - refunded if refunded exists
    - cancelled if cancelled exists
    - delivered if delivered exists
-   - else 'created' (or 'in_progress' depending on your semantics)
+   - else 'created' this is a new order status taht I created.
 --------------------------------------------------- */
 final AS (
   SELECT
