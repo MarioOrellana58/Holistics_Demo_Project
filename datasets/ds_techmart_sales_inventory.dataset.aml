@@ -15,7 +15,10 @@ Dataset ds_techmart_sales_inventory {
     gld_dim_users,
     gld_dim_cities,
     gld_dim_countries,
-    gld_dim_dates
+    gld_dim_dates_created,
+    gld_dim_dates_delivered,
+    gld_dim_dates_cancelled,
+    gld_dim_dates_refunded
   ]
   relationships: [
     // ------------------------
@@ -54,25 +57,23 @@ Dataset ds_techmart_sales_inventory {
     // ------------------------
     // Dates (role-playing)
     // ------------------------
-    // Challenge 1.1: activate ONLY ONE date role to keep dataset usable.
-    // We will handle multiple roles properly in Challenge 1.2.
-    relationship(gld_fct_orders.created_date_key > gld_dim_dates.date_key, true),
-
-    // Keep these inactive for now (enable per-metric later in Challenge 1.2)
-    relationship(gld_fct_orders.delivered_date_key > gld_dim_dates.date_key, false),
-    relationship(gld_fct_orders.cancelled_date_key > gld_dim_dates.date_key, false),
-    relationship(gld_fct_orders.refunded_date_key > gld_dim_dates.date_key, false)
+    // Role-playing Dates (Solution B)
+    relationship(gld_fct_orders.created_date_key   > gld_dim_dates_created.date_key, true),
+    relationship(gld_fct_orders.delivered_date_key > gld_dim_dates_delivered.date_key, true),
+    relationship(gld_fct_orders.cancelled_date_key > gld_dim_dates_cancelled.date_key, true),
+    relationship(gld_fct_orders.refunded_date_key  > gld_dim_dates_refunded.date_key, true)
   ]
 
   // ------------------------
-  // Metrics (AQL) - dataset level
+  // 2.1 Metrics
   // ------------------------
 
   metric total_revenue {
     label: "Total Revenue"
     type: "number"
     definition: @aql gld_fct_order_lines
-      | sum(gld_fct_order_lines.net_revenue)
+      | filter(gld_fct_order_lines.order_status == "delivered")
+      | sum(gld_fct_order_lines.gross_revenue)
     ;;
   }
 
@@ -84,11 +85,43 @@ Dataset ds_techmart_sales_inventory {
     ;;
   }
 
-  metric aov {
-    label: "Average Order Value (AOV)"
+  metric gross_margin_completed {
+    label: "Gross Margin % (Completed)"
     type: "number"
-    definition: @aql safe_divide(total_revenue, total_orders) ;;
+    definition: @aql safe_divide(
+      (
+        gld_fct_order_lines
+          | filter(gld_fct_order_lines.order_status == "delivered")
+          | sum(gld_fct_order_lines.gross_revenue)
+      )
+      -
+      (
+        gld_dim_products
+          | sum(gld_dim_products.cost)
+      ),
+      gld_fct_order_lines
+        | filter(gld_fct_order_lines.order_status == "delivered")
+        | sum(gld_fct_order_lines.gross_revenue)
+    )
+    ;;
   }
+
+
+  metric aov_completed {
+    label: "Average Order Value (Completed)"
+    type: "number"
+    definition: @aql safe_divide(
+      gld_fct_order_lines
+        | filter(gld_fct_order_lines.order_status == "delivered")
+        | sum(gld_fct_order_lines.gross_revenue),
+
+      gld_fct_order_lines
+        | filter(gld_fct_order_lines.order_status == "delivered")
+        | count_distinct(gld_fct_order_lines.order_id)
+    )
+    ;;
+  }
+
 
   metric customer_count {
     label: "Customer Count"
@@ -99,7 +132,7 @@ Dataset ds_techmart_sales_inventory {
   }
 
   // ------------------------
-  // Inventory turnover (approx)
+  // 1.1 metrics
   // ------------------------
   // Assumptions:
   // - Inventory value uses latest snapshot (current inventory)
@@ -126,6 +159,46 @@ Dataset ds_techmart_sales_inventory {
     type: "number"
     definition: @aql safe_divide(estimated_cogs, current_inventory_value) ;;
   }
+
+
+
+  // ------------------------
+  // 2.2 metrics
+  // ------------------------
+
+
+  metric revenue_completed {
+    label: "Revenue (Completed)"
+    type: "number"
+    definition: @aql gld_fct_order_lines
+      // Keep revenue aligned to completed orders using the orders model filter
+      | filter(gld_fct_orders.is_delivered == 1)
+      | sum(gld_fct_order_lines.net_revenue)
+    ;;
+  }
+
+  metric revenue_pct_of_total_by_category {
+    label: "Revenue % of Total (Completed)"
+    type: "number"
+    definition: @aql (revenue_completed * 1.0)
+      / (revenue_completed | of_all(gld_dim_categories))
+    ;;
+  }
+
+  metric revenue_mom_growth_pct {
+  label: "Revenue MoM Growth % (Completed)"
+  type: "number"
+  definition: @aql safe_divide(
+    revenue_completed - (revenue_completed | relative_period(gld_dim_dates_created.date, interval(-1 month))),
+    (revenue_completed | relative_period(gld_dim_dates_created.date, interval(-1 month)))
+  ) ;;
+}
+
+
+
+
+
+
 
   owner: "Mario Gómez"
 }
